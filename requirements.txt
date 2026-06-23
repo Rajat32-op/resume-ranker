@@ -9,6 +9,7 @@ python-docx>=1.1.0
 sentence-transformers>=5.0.0
 torch>=2.8.0
 transformers>=4.56.0
+scikit-learn>=1.7.0
 
 # Retrieval
 faiss-cpu>=1.12.0
