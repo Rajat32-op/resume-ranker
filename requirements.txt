@@ -1,0 +1,25 @@
+# Core
+numpy>=2.0.0
+pandas>=2.2.0
+
+# Parsing
+python-docx>=1.1.0
+
+# Embeddings
+sentence-transformers>=5.0.0
+torch>=2.8.0
+transformers>=4.56.0
+
+# Retrieval
+faiss-cpu>=1.12.0
+rank-bm25>=0.2.2
+
+# Re-ranking
+scikit-learn>=1.7.0
+
+# Utilities
+tqdm>=4.67.0
+pyyaml>=6.0
+
+# Sandbox
+streamlit>=1.49.0
