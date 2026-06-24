@@ -13,6 +13,15 @@ class SourceScore:
     value: float
 
 
+@dataclass
+class DimensionScore:
+
+    source_score: SourceScore
+    cross_encoder_score: float
+
+    final_score: float
+
+
 class SourceScorer:
 
     SOURCE_WEIGHTS = {
