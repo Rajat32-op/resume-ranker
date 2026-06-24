@@ -1,50 +1,217 @@
-import argparse
-import pandas as pd
+import json
+import numpy as np
+
 from src.ranker import Ranker
 
-def generate_reasoning(candidate_score):
-    """
-    Generate a simple reasoning string based on top performing dimensions.
-    """
-    top_dims = sorted(
-        candidate_score.dimension_scores.items(),
-        key=lambda x: x[1].final_score,
-        reverse=True
-    )[:3]
-    
-    reasons = []
-    for dim_name, scores in top_dims:
-        reasons.append(f"{dim_name.lower().replace('_', ' ')} ({scores.final_score:.2f})")
-    
-    return f"Strong match in: {', '.join(reasons)}."
+from src.scoring.confidence import (
+    ConfidenceScorer
+)
+
+from src.scoring.dimension_score import (
+    DimensionScorer
+)
+
+from src.scoring.candidate_score import (
+    CandidateScore
+)
+
+from src.retrieval.cross_encoder_matcher import (
+    CrossEncoderMatcher
+)
+
+
+TOP_K = 1000
+
+
+def normalize_cross_encoder_scores(
+        candidate_ce_scores
+):
+
+    dimensions = set()
+
+    for scores in candidate_ce_scores.values():
+        dimensions.update(scores.keys())
+
+    for dimension in dimensions:
+
+        values = np.array([
+
+            candidate_ce_scores[candidate_id].get(
+                dimension,
+                0.0
+            )
+
+            for candidate_id in candidate_ce_scores
+
+        ])
+
+        min_val = values.min()
+        max_val = values.max()
+
+        denom = max_val - min_val
+
+        if denom < 1e-8:
+            denom = 1.0
+
+        for candidate_id in candidate_ce_scores:
+
+            raw = candidate_ce_scores[
+                candidate_id
+            ].get(
+                dimension,
+                0.0
+            )
+
+            candidate_ce_scores[
+                candidate_id
+            ][
+                dimension
+            ] = (
+                raw - min_val
+            ) / denom
+
+    return candidate_ce_scores
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Rank candidates for a JD.")
-    parser.add_argument("--candidates", type=str, required=True, help="Path to candidates JSON/JSONL file.")
-    parser.add_argument("--jd", type=str, default="data/job_description.docx", help="Path to JD docx file.")
-    parser.add_argument("--out", type=str, default="submission.csv", help="Output path for the CSV.")
-    parser.add_argument("--top_k", type=int, default=1000, help="Number of candidates to rerank in Stage 2.")
-    
-    args = parser.parse_args()
-    
-    print(f"Loading Ranker with JD: {args.jd}")
-    ranker = Ranker(args.jd, args.candidates)
-    
-    print(f"Ranking candidates (Stage 2 top_k={args.top_k})...")
-    results = ranker.rank_candidates(top_k=args.top_k)
-    
-    output_data = []
-    for i, res in enumerate(results):
-        output_data.append({
-            "candidate_id": res.candidate_id,
-            "rank": i + 1,
-            "score": round(res.final_score, 4),
-            "reasoning": generate_reasoning(res)
-        })
-    
-    df = pd.DataFrame(output_data)
-    df.to_csv(args.out, index=False)
-    print(f"Saved {len(df)} results to {args.out}")
+
+    ranker = Ranker(
+        jd_path="data/job_description.docx",
+        candidates_path="data/candidates.jsonl"
+    )
+
+    stage1_results = ranker.rank_candidates()
+
+    top_candidates = stage1_results[:TOP_K]
+
+    candidate_lookup = {
+
+        candidate.candidate_id: candidate
+
+        for candidate in ranker.candidates
+    }
+
+    confidence_scorer = (
+        ConfidenceScorer()
+    )
+
+    dimension_scorer = (
+        DimensionScorer()
+    )
+
+    cross_encoder_matcher = (
+        CrossEncoderMatcher()
+    )
+
+    # --------------------------------------------------
+    # Cross encoder scoring
+    # --------------------------------------------------
+
+    candidate_ce_scores = {}
+
+    for result in top_candidates:
+
+        candidate = candidate_lookup[
+            result.candidate_id
+        ]
+
+        ce_scores = (
+            cross_encoder_matcher
+            .score_all_dimensions(
+                ranker.dimensions,
+                candidate
+            )
+        )
+
+        candidate_ce_scores[
+            candidate.candidate_id
+        ] = ce_scores
+
+    candidate_ce_scores = (
+        normalize_cross_encoder_scores(
+            candidate_ce_scores
+        )
+    )
+
+    # --------------------------------------------------
+    # Final scoring
+    # --------------------------------------------------
+
+    final_results = []
+
+    for result in top_candidates:
+
+        # Extract only SourceScore objects from dimension_scores
+        current_source_scores = {
+            dim_name: dim_score.source_score
+            for dim_name, dim_score in result.dimension_scores.items()
+        }
+
+        confidence_scores = (
+            confidence_scorer
+            .score_all_dimensions(
+                current_source_scores
+            )
+        )
+
+        dimension_scores = (
+            dimension_scorer
+            .score_all_dimensions(
+                source_scores=current_source_scores,
+                confidence_scores=confidence_scores,
+                cross_encoder_scores=
+                candidate_ce_scores[
+                    result.candidate_id
+                ]
+            )
+        )
+
+        final_score = 0.0
+
+        for dimension in ranker.dimensions:
+
+            if dimension.name not in dimension_scores:
+                continue
+
+            final_score += (
+
+                dimension.weight
+
+                *
+
+                dimension_scores[
+                    dimension.name
+                ].final_score
+
+            )
+
+        final_results.append(
+
+            CandidateScore(
+                candidate_id=result.candidate_id,
+                dimension_scores=result.dimension_scores,
+                final_score=final_score
+            )
+
+        )
+
+    final_results.sort(
+        key=lambda x: x.final_score,
+        reverse=True
+    )
+
+    print("\nTOP 100\n")
+
+    for result in final_results[:100]:
+
+        print(
+            result.candidate_id,
+            round(
+                result.final_score,
+                4
+            )
+        )
+
 
 if __name__ == "__main__":
     main()

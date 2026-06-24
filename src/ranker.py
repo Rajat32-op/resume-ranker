@@ -158,14 +158,14 @@ class Ranker:
 
         return {
             "candidate": candidate,
-            "source_scores": source_scores,
+            "dimension_scores": source_scores,
             "stage1_final_score": stage1_final_score
         }
 
     def rank_candidates(
             self,
             top_k: int = 1000
-    ) -> List[CandidateScore]:
+    ) -> List:
         
         # 1. Run Stage 1 for all candidates
         stage1_results = []
@@ -204,7 +204,7 @@ class Ranker:
         final_results = []
         for i, data in enumerate(top_candidates_data):
             candidate = data["candidate"]
-            source_scores = data["source_scores"]
+            source_scores = data["dimension_scores"]
             
             dimension_scores = {}
             total_final_score = 0
