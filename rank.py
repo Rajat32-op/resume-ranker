@@ -77,7 +77,7 @@ def main():
 
     ranker = Ranker(
         jd_path="data/job_description.docx",
-        candidates_path="data/candidates.jsonl"
+        candidates_path="data/sample_candidates.json"
     )
 
     stage1_results = ranker.rank_candidates()
