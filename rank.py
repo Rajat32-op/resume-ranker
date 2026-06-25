@@ -1,216 +1,107 @@
+import argparse
 import json
-import numpy as np
 
 from src.ranker import Ranker
 
-from src.scoring.confidence import (
-    ConfidenceScorer
-)
-
-from src.scoring.dimension_score import (
-    DimensionScorer
-)
-
-from src.scoring.candidate_score import (
-    CandidateScore
-)
-
-from src.retrieval.cross_encoder_matcher import (
-    CrossEncoderMatcher
-)
+DEFAULT_JD_PATH = "data/job_description.docx"
+DEFAULT_SAMPLE_CANDIDATES_PATH = "data/sample_candidates.json"
+DEFAULT_POOL_CANDIDATES_PATH = "data/candidates.jsonl"
+DEFAULT_EMBEDDINGS_PATH = "artifacts/candidate_embeddings.npy"
+DEFAULT_IDS_PATH = "artifacts/candidate_ids.npy"
+STAGE1_TOP_K = 1000
+FINAL_OUTPUT_TOP_N = 100
 
 
-TOP_K = 1000
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run the resume ranking pipeline"
+    )
+
+    parser.add_argument(
+        "--candidate-mode",
+        choices=["sample", "pool"],
+        default="sample",
+        help="Sample mode uses <=100 uploaded candidates and computes embeddings live. Pool mode uses the 100k candidate pool and precomputed embeddings."
+    )
+
+    parser.add_argument(
+        "--jd-path",
+        default=DEFAULT_JD_PATH,
+        help="Path to the job description docx"
+    )
+
+    parser.add_argument(
+        "--candidates-path",
+        default=None,
+        help="Path to the candidate file. Defaults to sample_candidates.json in sample mode or candidates.jsonl in pool mode"
+    )
+
+    parser.add_argument(
+        "--output-json",
+        default=None,
+        help="Optional path to write final results as JSON"
+    )
+
+    return parser.parse_args()
 
 
-def normalize_cross_encoder_scores(
-        candidate_ce_scores
-):
+def resolve_defaults(args):
+    if args.candidates_path is None:
+        if args.candidate_mode == "pool":
+            args.candidates_path = DEFAULT_POOL_CANDIDATES_PATH
+        else:
+            args.candidates_path = DEFAULT_SAMPLE_CANDIDATES_PATH
 
-    dimensions = set()
+    return args
 
-    for scores in candidate_ce_scores.values():
-        dimensions.update(scores.keys())
 
-    for dimension in dimensions:
+def serialize_results(results):
+    serialized = []
 
-        values = np.array([
+    for result in results:
+        serialized.append(
+            {
+                "candidate_id": result.candidate_id,
+                "final_score": result.final_score,
+                "dimension_scores": {
+                    dimension_name: {
+                        "source_score": dimension_score.source_score.value if dimension_score.source_score else 0.0,
+                        "embedding_score": dimension_score.source_score.embedding_score if dimension_score.source_score else 0.0,
+                        "bm25_score": dimension_score.source_score.bm25_score if dimension_score.source_score else 0.0,
+                        "structured_score": dimension_score.source_score.structured_score if dimension_score.source_score else 0.0,
+                        "cross_encoder_score": dimension_score.cross_encoder_score,
+                        "confidence_score": getattr(dimension_score, "confidence_score", 0.0),
+                        "final_score": dimension_score.final_score,
+                    }
+                    for dimension_name, dimension_score in result.dimension_scores.items()
+                },
+            }
+        )
 
-            candidate_ce_scores[candidate_id].get(
-                dimension,
-                0.0
-            )
-
-            for candidate_id in candidate_ce_scores
-
-        ])
-
-        min_val = values.min()
-        max_val = values.max()
-
-        denom = max_val - min_val
-
-        if denom < 1e-8:
-            denom = 1.0
-
-        for candidate_id in candidate_ce_scores:
-
-            raw = candidate_ce_scores[
-                candidate_id
-            ].get(
-                dimension,
-                0.0
-            )
-
-            candidate_ce_scores[
-                candidate_id
-            ][
-                dimension
-            ] = (
-                raw - min_val
-            ) / denom
-
-    return candidate_ce_scores
+    return serialized
 
 
 def main():
+    args = resolve_defaults(parse_args())
 
     ranker = Ranker(
-        jd_path="data/job_description.docx",
-        candidates_path="data/sample_candidates.json"
+        jd_path=args.jd_path,
+        candidates_path=args.candidates_path,
+        use_precomputed_embeddings=args.candidate_mode == "pool",
+        embeddings_path=DEFAULT_EMBEDDINGS_PATH,
+        ids_path=DEFAULT_IDS_PATH,
     )
 
-    stage1_results = ranker.rank_candidates()
+    results = ranker.rank_candidates(top_k=STAGE1_TOP_K)
 
-    top_candidates = stage1_results[:TOP_K]
+    print(f"\nTOP {FINAL_OUTPUT_TOP_N}\n")
 
-    candidate_lookup = {
+    for result in results[: FINAL_OUTPUT_TOP_N]:
+        print(result.candidate_id, round(result.final_score, 4))
 
-        candidate.candidate_id: candidate
-
-        for candidate in ranker.candidates
-    }
-
-    confidence_scorer = (
-        ConfidenceScorer()
-    )
-
-    dimension_scorer = (
-        DimensionScorer()
-    )
-
-    cross_encoder_matcher = (
-        CrossEncoderMatcher()
-    )
-
-    # --------------------------------------------------
-    # Cross encoder scoring
-    # --------------------------------------------------
-
-    candidate_ce_scores = {}
-
-    for result in top_candidates:
-
-        candidate = candidate_lookup[
-            result.candidate_id
-        ]
-
-        ce_scores = (
-            cross_encoder_matcher
-            .score_all_dimensions(
-                ranker.dimensions,
-                candidate
-            )
-        )
-
-        candidate_ce_scores[
-            candidate.candidate_id
-        ] = ce_scores
-
-    candidate_ce_scores = (
-        normalize_cross_encoder_scores(
-            candidate_ce_scores
-        )
-    )
-
-    # --------------------------------------------------
-    # Final scoring
-    # --------------------------------------------------
-
-    final_results = []
-
-    for result in top_candidates:
-
-        # Extract only SourceScore objects from dimension_scores
-        current_source_scores = {
-            dim_name: dim_score.source_score
-            for dim_name, dim_score in result.dimension_scores.items()
-        }
-
-        confidence_scores = (
-            confidence_scorer
-            .score_all_dimensions(
-                current_source_scores
-            )
-        )
-
-        dimension_scores = (
-            dimension_scorer
-            .score_all_dimensions(
-                source_scores=current_source_scores,
-                confidence_scores=confidence_scores,
-                cross_encoder_scores=
-                candidate_ce_scores[
-                    result.candidate_id
-                ]
-            )
-        )
-
-        final_score = 0.0
-
-        for dimension in ranker.dimensions:
-
-            if dimension.name not in dimension_scores:
-                continue
-
-            final_score += (
-
-                dimension.weight
-
-                *
-
-                dimension_scores[
-                    dimension.name
-                ].final_score
-
-            )
-
-        final_results.append(
-
-            CandidateScore(
-                candidate_id=result.candidate_id,
-                dimension_scores=result.dimension_scores,
-                final_score=final_score
-            )
-
-        )
-
-    final_results.sort(
-        key=lambda x: x.final_score,
-        reverse=True
-    )
-
-    print("\nTOP 100\n")
-
-    for result in final_results[:100]:
-
-        print(
-            result.candidate_id,
-            round(
-                result.final_score,
-                4
-            )
-        )
+    if args.output_json:
+        with open(args.output_json, "w", encoding="utf-8") as f:
+            json.dump(serialize_results(results[: FINAL_OUTPUT_TOP_N]), f, indent=2)
 
 
 if __name__ == "__main__":

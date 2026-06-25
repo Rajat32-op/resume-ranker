@@ -1,0 +1,17 @@
+Resume Filter
+
+CLI modes
+
+- Sample mode: rank up to 100 uploaded candidates with live embeddings.
+	- `python rank.py --candidate-mode sample --candidates-path data/sample_candidates.json --candidate-limit 100`
+- Pool mode: rank the 100k candidate pool using precomputed embeddings.
+	- `python rank.py --candidate-mode pool --candidates-path data/candidates.jsonl --embeddings-path artifacts/candidate_embeddings.npy --ids-path artifacts/candidate_ids.npy`
+
+Embedding build
+
+- `python scripts/build_embeddings.py --input data/candidates.jsonl --output-embeddings artifacts/candidate_embeddings.npy --output-ids artifacts/candidate_ids.npy`
+
+Hugging Face / Streamlit app
+
+- Run locally with `streamlit run app.py`
+- The app accepts JD uploads and either a sample JSON candidate file or a pool JSONL candidate file.

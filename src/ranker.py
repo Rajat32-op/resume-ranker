@@ -1,9 +1,8 @@
-import json
-import numpy as np
 from typing import List
 
 from src.parser.jd_parser import parse_jd
-from src.parser.candidate_parser import parse_candidate
+from src.parser.candidate_parser import load_candidates
+from src.parser.schema import Candidate
 
 from src.dimensions.anchor_builder import (
     build_dimension_templates
@@ -49,7 +48,13 @@ class Ranker:
     def __init__(
             self,
             jd_path: str,
-            candidates_path: str
+            candidates_path: str | None = None,
+            candidates: list[Candidate] | None = None,
+            candidate_file_format: str | None = None,
+            candidate_limit: int | None = None,
+            use_precomputed_embeddings: bool = False,
+            embeddings_path: str = "artifacts/candidate_embeddings.npy",
+            ids_path: str = "artifacts/candidate_ids.npy"
     ):
 
         # ---------- JD ----------
@@ -67,18 +72,25 @@ class Ranker:
         )
 
         # ---------- candidates ----------
-        with open(candidates_path) as f:
-            candidate_jsons = json.load(f)
-
-        self.candidates = [
-            parse_candidate(
-                candidate_json
+        if candidates is not None:
+            self.candidates = candidates
+        elif candidates_path is not None:
+            self.candidates = load_candidates(
+                candidates_path,
+                file_format=candidate_file_format,
+                limit=candidate_limit
             )
-            for candidate_json in candidate_jsons
-        ]
+        else:
+            raise ValueError(
+                "Either candidates or candidates_path must be provided"
+            )
 
         # ---------- matchers ----------
-        self.embedding_matcher = EmbeddingMatcher()
+        self.embedding_matcher = EmbeddingMatcher(
+            use_precomputed=use_precomputed_embeddings,
+            embeddings_path=embeddings_path,
+            ids_path=ids_path
+        )
 
         self.bm25_matcher = BM25Matcher(
             self.candidates
@@ -92,7 +104,8 @@ class Ranker:
 
     def score_candidate_stage1(
             self,
-            candidate
+            candidate,
+            bm25_scores: dict[str, float]
     ) -> dict:
         """
         Compute Stage 1 scores.
@@ -104,35 +117,6 @@ class Ranker:
                 candidate
             )
         )
-
-        # ---------- bm25 ----------
-        bm25_dimensions = [
-            dim
-            for dim in self.dimensions
-            if dim.name in {
-                "TECHNICAL_SKILLS",
-                "RANKING_RETRIEVAL",
-                "PRODUCTION_EXPERIENCE",
-                "EVALUATION_FRAMEWORKS",
-                "DOMAIN_EXPERIENCE"
-            }
-        ]
-
-        bm25_results = (
-            self.bm25_matcher.score_all_dimensions(
-                bm25_dimensions
-            )
-        )
-
-        bm25_scores = {
-            dimension_name:
-                bm25_results[
-                    dimension_name
-                ][
-                    candidate.candidate_id
-                ]
-            for dimension_name in bm25_results
-        }
 
         # ---------- structured ----------
         structured_scores = (
@@ -166,11 +150,37 @@ class Ranker:
             self,
             top_k: int = 1000
     ) -> List:
+
+        bm25_dimensions = [
+            dim
+            for dim in self.dimensions
+            if dim.name in {
+                "TECHNICAL_SKILLS",
+                "RANKING_RETRIEVAL",
+                "PRODUCTION_EXPERIENCE",
+                "EVALUATION_FRAMEWORKS",
+                "DOMAIN_EXPERIENCE"
+            }
+        ]
+
+        bm25_results = self.bm25_matcher.score_all_dimensions(
+            bm25_dimensions
+        )
         
         # 1. Run Stage 1 for all candidates
         stage1_results = []
         for candidate in self.candidates:
-            stage1_results.append(self.score_candidate_stage1(candidate))
+            bm25_scores = {
+                dimension_name: bm25_results[dimension_name][candidate.candidate_id]
+                for dimension_name in bm25_results
+            }
+
+            stage1_results.append(
+                self.score_candidate_stage1(
+                    candidate,
+                    bm25_scores=bm25_scores
+                )
+            )
         
         # Sort by Stage 1 score and take top K
         stage1_results.sort(key=lambda x: x["stage1_final_score"], reverse=True)

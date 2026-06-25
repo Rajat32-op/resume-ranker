@@ -1,5 +1,6 @@
+# src/retrieval/embedding_matcher.py
+
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
 from src.dimensions.dimension_schema import Dimension
@@ -10,55 +11,142 @@ class EmbeddingMatcher:
 
     def __init__(
             self,
+            use_precomputed: bool = True,
+            embeddings_path: str = "artifacts/candidate_embeddings.npy",
+            ids_path: str = "artifacts/candidate_ids.npy",
             model_name: str = "BAAI/bge-small-en-v1.5"
     ):
 
-        self.model = SentenceTransformer(model_name)
+        self.use_precomputed = use_precomputed
+
+        self.model = SentenceTransformer(
+            model_name
+        )
+
+        self.dimension_embeddings = {}
+
+        if self.use_precomputed:
+
+            self.candidate_embeddings = np.load(
+                embeddings_path
+            )
+
+            self.candidate_ids = np.load(
+                ids_path,
+                allow_pickle=True
+            )
+
+            self.candidate_id_to_row = {
+
+                candidate_id: idx
+
+                for idx, candidate_id in enumerate(
+                    self.candidate_ids
+                )
+
+            }
 
     def build_dimension_text(
             self,
             dimension: Dimension
     ) -> str:
-        """
-        Convert a dimension into text to embed.
-        """
 
-        anchor_text = "\n".join(dimension.anchors)
-
-        paragraph_text = "\n".join(dimension.jd_paragraphs)
-
-        return anchor_text + "\n" + paragraph_text
-
-    def score_dimension(
-            self,
-            dimension: Dimension,
-            candidate: Candidate
-    ) -> float:
-        """
-        Compute semantic similarity between a dimension
-        and a candidate.
-        """
-
-        dimension_text = self.build_dimension_text(
-            dimension
+        anchor_text = "\n".join(
+            dimension.anchors
         )
 
-        candidate_text = candidate.raw_text
+        paragraph_text = "\n".join(
+            dimension.jd_paragraphs
+        )
+
+        return (
+            anchor_text
+            + "\n"
+            + paragraph_text
+        )
+
+    def build_dimension_embeddings(
+            self,
+            dimensions: list[Dimension]
+    ):
+
+        texts = [
+
+            self.build_dimension_text(
+                dimension
+            )
+
+            for dimension in dimensions
+
+        ]
 
         embeddings = self.model.encode(
-            [dimension_text, candidate_text],
-            normalize_embeddings=True
+            texts,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False
         )
 
-        dimension_embedding = embeddings[0]
-        candidate_embedding = embeddings[1]
+        self.dimension_embeddings = {
 
-        score = cosine_similarity(
-            dimension_embedding.reshape(1, -1),
-            candidate_embedding.reshape(1, -1)
-        )[0][0]
+            dimension.name: embedding
 
-        return float(score)
+            for dimension, embedding in zip(
+                dimensions,
+                embeddings
+            )
+
+        }
+
+    def get_candidate_embedding(
+            self,
+            candidate: Candidate
+    ) -> np.ndarray:
+
+        if self.use_precomputed:
+
+            row = self.candidate_id_to_row[
+                candidate.candidate_id
+            ]
+
+            return self.candidate_embeddings[
+                row
+            ]
+
+        return self.model.encode(
+            candidate.raw_text,
+            normalize_embeddings=True,
+            convert_to_numpy=True
+        )
+
+    def score_candidate(
+            self,
+            candidate: Candidate
+    ) -> dict[str, float]:
+
+        candidate_embedding = (
+            self.get_candidate_embedding(
+                candidate
+            )
+        )
+
+        scores = {}
+
+        for (
+                dimension_name,
+                dimension_embedding
+        ) in self.dimension_embeddings.items():
+
+            score = np.dot(
+                dimension_embedding,
+                candidate_embedding
+            )
+
+            scores[
+                dimension_name
+            ] = float(score)
+
+        return scores
 
     def score_all_dimensions(
             self,
@@ -66,15 +154,12 @@ class EmbeddingMatcher:
             candidate: Candidate
     ) -> dict[str, float]:
 
-        scores = {}
+        if not self.dimension_embeddings:
 
-        for dimension in dimensions:
-
-            scores[dimension.name] = (
-                self.score_dimension(
-                    dimension,
-                    candidate
-                )
+            self.build_dimension_embeddings(
+                dimensions
             )
 
-        return scores
+        return self.score_candidate(
+            candidate
+        )

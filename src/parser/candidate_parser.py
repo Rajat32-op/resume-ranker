@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+from typing import Iterable
 
 from .schema import (
     Candidate,
@@ -165,8 +168,50 @@ def parse_candidate(candidate_json: dict) -> Candidate:
     )
 
 
-def load_candidates(path: str):
-    with open(path) as f:
-        candidates_json = json.load(f)
+def load_candidates_from_records(
+        candidate_records: Iterable[dict]
+):
+    return [parse_candidate(candidate_json) for candidate_json in candidate_records]
 
-    return [parse_candidate(c) for c in candidates_json]
+
+def load_candidates(
+        path: str,
+        file_format: str | None = None,
+        limit: int | None = None
+):
+    path_obj = Path(path)
+
+    if file_format is None:
+        file_format = "jsonl" if path_obj.suffix.lower() == ".jsonl" else "json"
+
+    candidate_records = []
+
+    with open(path_obj, encoding="utf-8") as f:
+
+        if file_format == "jsonl":
+
+            for line in f:
+
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                candidate_records.append(json.loads(line))
+
+                if limit is not None and len(candidate_records) >= limit:
+                    break
+
+        else:
+
+            candidates_json = json.load(f)
+
+            if isinstance(candidates_json, dict):
+                candidates_json = [candidates_json]
+
+            if limit is not None:
+                candidates_json = candidates_json[:limit]
+
+            candidate_records = list(candidates_json)
+
+    return load_candidates_from_records(candidate_records)
