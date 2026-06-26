@@ -125,3 +125,4 @@ class Candidate:
 
     # Filled by parser for retrieval models
     raw_text: str = ""
+    lower_text: str = ""

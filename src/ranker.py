@@ -105,20 +105,12 @@ class Ranker:
     def score_candidate_stage1(
             self,
             candidate,
-            bm25_scores: dict[str, float]
+            bm25_scores: dict[str, float],
+            embedding_scores: dict[str, float]
     ) -> dict:
         """
         Compute Stage 1 scores.
         """
-        # ---------- embedding ----------
-        embedding_scores = (
-            self.embedding_matcher.score_all_dimensions(
-                self.dimensions,
-                candidate
-            )
-        )
-
-        # ---------- structured ----------
         structured_scores = (
             self.structured_matcher.score_all_dimensions(
                 candidate
@@ -147,9 +139,10 @@ class Ranker:
         }
 
     def rank_candidates(
-            self,
-            top_k: int = 1000
-    ) -> List:
+            self
+    ) -> List[CandidateScore]:
+
+        STAGE1_TOP_K = 100
 
         bm25_dimensions = [
             dim
@@ -166,10 +159,14 @@ class Ranker:
         bm25_results = self.bm25_matcher.score_all_dimensions(
             bm25_dimensions
         )
-        
-        # 1. Run Stage 1 for all candidates
+
+        embedding_scores_list = self.embedding_matcher.score_candidates_bulk(
+            self.dimensions,
+            self.candidates
+        )
+
         stage1_results = []
-        for candidate in self.candidates:
+        for candidate, embedding_scores in zip(self.candidates, embedding_scores_list):
             bm25_scores = {
                 dimension_name: bm25_results[dimension_name][candidate.candidate_id]
                 for dimension_name in bm25_results
@@ -178,27 +175,23 @@ class Ranker:
             stage1_results.append(
                 self.score_candidate_stage1(
                     candidate,
-                    bm25_scores=bm25_scores
+                    bm25_scores=bm25_scores,
+                    embedding_scores=embedding_scores
                 )
             )
-        
-        # Sort by Stage 1 score and take top K
+
         stage1_results.sort(key=lambda x: x["stage1_final_score"], reverse=True)
-        top_candidates_data = stage1_results[:top_k]
-        
-        # 2. Run Stage 2 (Cross-Encoder) for top candidates
+        top_candidates_data = stage1_results[:STAGE1_TOP_K]
+
         all_ce_scores = {dim: [] for dim in CrossEncoderMatcher.CE_DIMENSIONS}
-        candidate_ce_results = []
-        
+
         for data in top_candidates_data:
             candidate = data["candidate"]
             ce_scores = self.ce_matcher.score_all_dimensions(self.dimensions, candidate)
-            candidate_ce_results.append(ce_scores)
-            
+            data["ce_scores"] = ce_scores
             for dim, score in ce_scores.items():
                 all_ce_scores[dim].append(score)
-        
-        # 3. Normalize CE scores dimension-wise to [0, 1]
+
         normalized_ce_scores = {}
         for dim, scores in all_ce_scores.items():
             if not scores:
@@ -209,41 +202,37 @@ class Ranker:
                 normalized_ce_scores[dim] = [(s - min_score) / (max_score - min_score) for s in scores]
             else:
                 normalized_ce_scores[dim] = [0.0 for _ in scores]
-        
-        # 4. Combine scores and build final CandidateScore objects
+
         final_results = []
         for i, data in enumerate(top_candidates_data):
             candidate = data["candidate"]
             source_scores = data["dimension_scores"]
-            
+            ce_scores = data["ce_scores"]
+
             dimension_scores = {}
             total_final_score = 0
-            
+
             for dimension in self.dimensions:
                 dim_name = dimension.name
                 s1_score = source_scores.get(dim_name)
-                
-                # Default values if dimension not in matchers
                 s1_val = s1_score.value if s1_score else 0.0
                 ce_val = 0.0
-                
+
                 if dim_name in CrossEncoderMatcher.CE_DIMENSIONS:
-                    # Get the normalized score for this candidate (at index i)
                     ce_val = normalized_ce_scores[dim_name][i]
-                    
                     ce_weight = self.CE_COMBINATION_WEIGHTS.get(dim_name, 0.5)
                     final_dim_score = (ce_weight * ce_val) + ((1 - ce_weight) * s1_val)
                 else:
                     final_dim_score = s1_val
-                
+
                 dimension_scores[dim_name] = DimensionScore(
                     source_score=s1_score,
                     cross_encoder_score=ce_val,
                     final_score=final_dim_score
                 )
-                
+
                 total_final_score += dimension.weight * final_dim_score
-            
+
             final_results.append(
                 CandidateScore(
                     candidate_id=candidate.candidate_id,
@@ -251,7 +240,6 @@ class Ranker:
                     final_score=total_final_score
                 )
             )
-            
-        # Re-rank based on final total score
+
         final_results.sort(key=lambda x: x.final_score, reverse=True)
         return final_results

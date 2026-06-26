@@ -1,5 +1,7 @@
 import argparse
 import json
+from datetime import datetime
+from pathlib import Path
 
 from src.ranker import Ranker
 
@@ -8,7 +10,7 @@ DEFAULT_SAMPLE_CANDIDATES_PATH = "data/sample_candidates.json"
 DEFAULT_POOL_CANDIDATES_PATH = "data/candidates.jsonl"
 DEFAULT_EMBEDDINGS_PATH = "artifacts/candidate_embeddings.npy"
 DEFAULT_IDS_PATH = "artifacts/candidate_ids.npy"
-STAGE1_TOP_K = 1000
+DEFAULT_OUTPUT_DIR = "outputs"
 FINAL_OUTPUT_TOP_N = 100
 
 
@@ -92,12 +94,23 @@ def main():
         ids_path=DEFAULT_IDS_PATH,
     )
 
-    results = ranker.rank_candidates(top_k=STAGE1_TOP_K)
+    results = ranker.rank_candidates()
 
     print(f"\nTOP {FINAL_OUTPUT_TOP_N}\n")
 
     for result in results[: FINAL_OUTPUT_TOP_N]:
         print(result.candidate_id, round(result.final_score, 4))
+
+    output_dir = Path(DEFAULT_OUTPUT_DIR)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    csv_path = output_dir / f"ranking_results_{args.candidate_mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        f.write("candidate_id,final_score\n")
+        for result in results[: FINAL_OUTPUT_TOP_N]:
+            f.write(f"{result.candidate_id},{result.final_score}\n")
+
+    print(f"Saved CSV output to: {csv_path}")
 
     if args.output_json:
         with open(args.output_json, "w", encoding="utf-8") as f:

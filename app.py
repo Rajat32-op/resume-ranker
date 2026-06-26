@@ -1,5 +1,7 @@
 import json
 import tempfile
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -9,7 +11,7 @@ from src.ranker import Ranker
 
 DEFAULT_EMBEDDINGS_PATH = "artifacts/candidate_embeddings.npy"
 DEFAULT_IDS_PATH = "artifacts/candidate_ids.npy"
-STAGE1_TOP_K = 1000
+DEFAULT_OUTPUT_DIR = "outputs"
 FINAL_OUTPUT_TOP_N = 100
 
 
@@ -173,7 +175,7 @@ with right_col:
                     embeddings_path=DEFAULT_EMBEDDINGS_PATH,
                     ids_path=DEFAULT_IDS_PATH,
                 )
-                results = ranker.rank_candidates(top_k=STAGE1_TOP_K)
+                results = ranker.rank_candidates()
 
             rows = []
             for result in results[: FINAL_OUTPUT_TOP_N]:
@@ -186,11 +188,17 @@ with right_col:
 
             if rows:
                 frame = pd.DataFrame(rows)
+                output_dir = Path(DEFAULT_OUTPUT_DIR)
+                output_dir.mkdir(parents=True, exist_ok=True)
+                csv_path = output_dir / f"ranking_results_{candidate_mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                frame.to_csv(csv_path, index=False)
+
+                st.success(f"Saved top {FINAL_OUTPUT_TOP_N} results to `{csv_path}`")
                 st.dataframe(frame, use_container_width=True, hide_index=True)
                 st.download_button(
                     "Download CSV",
                     data=frame.to_csv(index=False).encode("utf-8"),
-                    file_name="ranking_results.csv",
+                    file_name=csv_path.name,
                     mime="text/csv",
                     use_container_width=True,
                 )

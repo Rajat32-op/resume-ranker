@@ -104,14 +104,8 @@ class EmbeddingMatcher:
     ) -> np.ndarray:
 
         if self.use_precomputed:
-
-            row = self.candidate_id_to_row[
-                candidate.candidate_id
-            ]
-
-            return self.candidate_embeddings[
-                row
-            ]
+            row = self.candidate_id_to_row[candidate.candidate_id]
+            return self.candidate_embeddings[row]
 
         return self.model.encode(
             candidate.raw_text,
@@ -119,34 +113,63 @@ class EmbeddingMatcher:
             convert_to_numpy=True
         )
 
+    def get_candidate_embeddings_matrix(
+            self,
+            candidates: list[Candidate]
+    ) -> np.ndarray:
+
+        if self.use_precomputed:
+            rows = [
+                self.candidate_id_to_row[candidate.candidate_id]
+                for candidate in candidates
+            ]
+            return self.candidate_embeddings[rows]
+
+        return self.model.encode(
+            [candidate.raw_text for candidate in candidates],
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False
+        )
+
     def score_candidate(
             self,
             candidate: Candidate
     ) -> dict[str, float]:
 
-        candidate_embedding = (
-            self.get_candidate_embedding(
-                candidate
-            )
-        )
-
+        candidate_embedding = self.get_candidate_embedding(candidate)
         scores = {}
 
-        for (
-                dimension_name,
-                dimension_embedding
-        ) in self.dimension_embeddings.items():
-
-            score = np.dot(
-                dimension_embedding,
-                candidate_embedding
-            )
-
-            scores[
-                dimension_name
-            ] = float(score)
+        for dimension_name, dimension_embedding in self.dimension_embeddings.items():
+            score = np.dot(dimension_embedding, candidate_embedding)
+            scores[dimension_name] = float(score)
 
         return scores
+
+    def score_candidates_bulk(
+            self,
+            dimensions: list[Dimension],
+            candidates: list[Candidate]
+    ) -> list[dict[str, float]]:
+
+        if not self.dimension_embeddings:
+            self.build_dimension_embeddings(dimensions)
+
+        candidate_embeddings = self.get_candidate_embeddings_matrix(candidates)
+        dimension_matrix = np.stack(
+            [self.dimension_embeddings[dimension.name] for dimension in dimensions],
+            axis=0
+        )
+
+        scores_matrix = candidate_embeddings @ dimension_matrix.T
+
+        return [
+            {
+                dimension.name: float(score)
+                for dimension, score in zip(dimensions, candidate_scores)
+            }
+            for candidate_scores in scores_matrix
+        ]
 
     def score_all_dimensions(
             self,
@@ -155,11 +178,6 @@ class EmbeddingMatcher:
     ) -> dict[str, float]:
 
         if not self.dimension_embeddings:
+            self.build_dimension_embeddings(dimensions)
 
-            self.build_dimension_embeddings(
-                dimensions
-            )
-
-        return self.score_candidate(
-            candidate
-        )
+        return self.score_candidate(candidate)

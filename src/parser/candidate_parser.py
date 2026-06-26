@@ -154,6 +154,7 @@ def parse_candidate(candidate_json: dict) -> Candidate:
         raw_text_parts.append(e.field_of_study)
 
     raw_text = "\n".join(raw_text_parts)
+    lower_text = raw_text.lower()
 
     return Candidate(
         candidate_id=candidate_json["candidate_id"],
@@ -164,13 +165,14 @@ def parse_candidate(candidate_json: dict) -> Candidate:
         certifications=certifications,
         languages=languages,
         redrob_signals=redrob_signals,
-        raw_text=raw_text
+        raw_text=raw_text,
+        lower_text=lower_text,
     )
 
 
 def load_candidates_from_records(
         candidate_records: Iterable[dict]
-):
+) -> list[Candidate]:
     return [parse_candidate(candidate_json) for candidate_json in candidate_records]
 
 
