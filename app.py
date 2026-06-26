@@ -162,6 +162,7 @@ with right_col:
                         "candidate_id": result.candidate_id,
                         "rank":cnt,
                         "final_score": result.final_score,
+                        "reason": result.reason
                     }
                 )
                 cnt+=1

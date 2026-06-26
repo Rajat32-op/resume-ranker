@@ -1,9 +1,12 @@
 import heapq
 from concurrent.futures import ThreadPoolExecutor
+import json
 from typing import List
+from unittest import result
 
+from src.scoring.reason_generator import ReasonGenerator
 from src.parser.jd_parser import parse_jd
-from src.parser.candidate_parser import load_candidates
+from src.parser.candidate_parser import load_candidates,parse_candidate
 from src.parser.schema import Candidate
 from src.parser.pool_cache import (
     load_pool_candidate_cache,
@@ -41,6 +44,9 @@ from src.scoring.candidate_score import (
     CandidateScore
 )
 
+from src.scoring.reason_generator import (
+    ReasonGenerator
+)
 
 class Ranker:
 
@@ -295,6 +301,26 @@ class Ranker:
             key=lambda x: x["stage1_final_score"]
         )
 
+        top_ids = {data["candidate_id"] for data in top_candidates_data}
+
+        candidate_lookup = {}
+
+        with open("data/candidates.jsonl", "r") as f:
+
+            for line in f:
+
+                candidate_json = json.loads(line)
+
+                if candidate_json["candidate_id"] not in top_ids:
+                    continue
+
+                candidate = parse_candidate(candidate_json)
+
+                candidate_lookup[candidate.candidate_id] = candidate
+
+                if len(candidate_lookup) == len(top_ids):
+                    break
+
         all_ce_scores = {dim: [] for dim in CrossEncoderMatcher.CE_DIMENSIONS}
         ce_candidates = [data["raw_text"] for data in top_candidates_data]
         ce_matcher = self._get_ce_matcher()
@@ -350,12 +376,17 @@ class Ranker:
                 )
 
                 total_final_score += dimension.weight * final_dim_score
-
+            reason_generator = ReasonGenerator()
+            reason = reason_generator.generate(
+                candidate=candidate_lookup[data["candidate_id"]],
+                dimension_scores=dimension_scores
+            )
             final_results.append(
                 CandidateScore(
                     candidate_id=data["candidate_id"],
                     dimension_scores=dimension_scores,
-                    final_score=total_final_score
+                    final_score=total_final_score,
+                    reason=reason
                 )
             )
 
@@ -492,12 +523,18 @@ class Ranker:
                 )
 
                 total_final_score += dimension.weight * final_dim_score
+            reason_generator = ReasonGenerator()
 
+            reason = reason_generator.generate(
+                candidate=candidate,
+                dimension_scores=dimension_scores
+            )
             final_results.append(
                 CandidateScore(
                     candidate_id=candidate.candidate_id,
                     dimension_scores=dimension_scores,
-                    final_score=total_final_score
+                    final_score=total_final_score,
+                    reason=reason
                 )
             )
 

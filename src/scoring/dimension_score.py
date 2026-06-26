@@ -20,15 +20,15 @@ class DimensionScorer:
 
     CROSS_ENCODER_WEIGHTS = {
 
-        "RANKING_RETRIEVAL": 0.40,
+        "RANKING_RETRIEVAL": 0.75,
 
-        "PRODUCTION_EXPERIENCE": 0.20,
+        "PRODUCTION_EXPERIENCE": 0.40,
 
-        "TECHNICAL_SKILLS": 0.20,
+        "TECHNICAL_SKILLS": 0.40,
 
-        "EVALUATION_FRAMEWORKS": 0.15,
+        "EVALUATION_FRAMEWORKS": 0.3,
 
-        "DOMAIN_EXPERIENCE": 0.05
+        "DOMAIN_EXPERIENCE": 0.1
 
     }
 

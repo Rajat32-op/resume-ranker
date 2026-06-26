@@ -108,17 +108,13 @@ def main():
 
     csv_path = output_dir / f"ranking_results_{args.candidate_mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     with open(csv_path, "w", encoding="utf-8") as f:
-        f.write("candidate_id,rank,final_score\n")
+        f.write("candidate_id,rank,final_score,reason\n")
         cnt=1
         for result in results[: FINAL_OUTPUT_TOP_N]:
-            f.write(f"{result.candidate_id},{cnt},{result.final_score}\n")
+            f.write(f"{result.candidate_id},{cnt},{result.final_score:.6f},{result.reason}\n")
             cnt += 1
 
     print(f"Saved CSV output to: {csv_path}")
-
-    if args.output_json:
-        with open(args.output_json, "w", encoding="utf-8") as f:
-            json.dump(serialize_results(results[: FINAL_OUTPUT_TOP_N]), f, indent=2)
 
     elapsed_seconds = perf_counter() - start_time
     print(f"Total time: {elapsed_seconds:.2f}s")

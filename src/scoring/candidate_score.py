@@ -11,3 +11,5 @@ class CandidateScore:
     dimension_scores: dict[str, DimensionScore]
 
     final_score: float
+
+    reason: str | None = None
