@@ -56,7 +56,7 @@ class StructuredMatcher:
             candidate: Candidate
     ) -> MatchResult:
 
-        text = candidate.raw_text.lower()
+        text = candidate.lower_text or candidate.raw_text.lower()
 
         score = 0
         evidence = []
@@ -77,7 +77,7 @@ class StructuredMatcher:
             candidate: Candidate
     ) -> MatchResult:
 
-        text = candidate.raw_text.lower()
+        text = candidate.lower_text or candidate.raw_text.lower()
 
         score = 0
         evidence = []
@@ -108,7 +108,7 @@ class StructuredMatcher:
             candidate: Candidate
     ) -> MatchResult:
 
-        text = candidate.raw_text.lower()
+        text = candidate.lower_text or candidate.raw_text.lower()
 
         score = 0
         evidence = []
@@ -172,4 +172,41 @@ class StructuredMatcher:
             "PRODUCT_MINDSET":
                 self.score_product_mindset(candidate)
 
+        }
+
+    def score_all_dimensions_values(
+            self,
+            candidate: Candidate
+    ) -> dict[str, float]:
+        text = candidate.lower_text or candidate.raw_text.lower()
+
+        ranking_score = 0.0
+        for term in self.RANKING_TERMS:
+            if term in text:
+                ranking_score += 0.1
+
+        production_score = 0.0
+        if candidate.profile.years_of_experience >= 5:
+            production_score += 0.2
+        for phrase in ["production", "deployed", "real users", "scale", "pipeline"]:
+            if phrase in text:
+                production_score += 0.15
+
+        evaluation_score = 0.0
+        for term in self.EVALUATION_TERMS:
+            if term in text:
+                evaluation_score += 0.25
+
+        company_names = [x.company.lower() for x in candidate.career_history]
+        product_score = 0.0
+        if all(company not in self.SERVICE_COMPANIES for company in company_names):
+            product_score += 0.5
+        if candidate.profile.years_of_experience >= 5:
+            product_score += 0.2
+
+        return {
+            "RANKING_RETRIEVAL": min(ranking_score, 1.0),
+            "PRODUCTION_EXPERIENCE": min(production_score, 1.0),
+            "EVALUATION_FRAMEWORKS": min(evaluation_score, 1.0),
+            "PRODUCT_MINDSET": min(product_score, 1.0)
         }

@@ -9,7 +9,13 @@ CLI modes
 
 Embedding build
 
-- `python scripts/build_embeddings.py --input data/candidates.jsonl --output-embeddings artifacts/candidate_embeddings.npy --output-ids artifacts/candidate_ids.npy`
+- `python3 preprocess.py`
+
+Offline preprocessing
+
+- `python3 preprocess.py` downloads the embedding and reranker model snapshots plus the pool embeddings and candidate ids, then builds `artifacts/pool_candidate_cache.npz`.
+- `python3 preprocess.py` also builds `artifacts/pool_bm25.pkl`, which lets pool mode skip rebuilding the BM25 index at runtime.
+- The ranking pipeline uses the local artifacts after preprocessing.
 
 Hugging Face / Streamlit app
 

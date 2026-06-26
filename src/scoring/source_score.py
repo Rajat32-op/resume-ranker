@@ -119,6 +119,28 @@ class SourceScorer:
             value=value
         )
 
+    def score_dimension_value(
+            self,
+            dimension_name: str,
+            embedding_score: float = 0.0,
+            bm25_score: float = 0.0,
+            structured_score: float = 0.0
+    ) -> float:
+        weights = self.SOURCE_WEIGHTS.get(
+            dimension_name,
+            {
+                "embedding": 0.3,
+                "bm25": 0.2,
+                "structured": 0.5
+            }
+        )
+
+        return (
+            weights["embedding"] * embedding_score
+            + weights["bm25"] * bm25_score
+            + weights["structured"] * structured_score
+        )
+
     def score_all_dimensions(
             self,
             embedding_scores: dict[str, float],

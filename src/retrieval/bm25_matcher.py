@@ -1,4 +1,5 @@
 import re
+import pickle
 
 from rank_bm25 import BM25Okapi
 
@@ -10,25 +11,44 @@ class BM25Matcher:
 
     def __init__(
             self,
-            candidates: list[Candidate]
+            candidates: list[Candidate] | None = None,
+            candidate_ids: list[str] | None = None,
+            corpus: list[list[str]] | None = None,
+            bm25: BM25Okapi | None = None
     ):
 
-        self.candidates = candidates
+        if candidates is None and bm25 is None and (candidate_ids is None or corpus is None):
+            raise ValueError("Provide candidates, a prebuilt bm25 index, or pretokenized candidate_ids and corpus")
 
-        self.candidate_ids = [
-            candidate.candidate_id
-            for candidate in candidates
-        ]
+        if candidates is not None:
+            self.candidates = candidates
+            self.candidate_ids = [
+                candidate.candidate_id
+                for candidate in candidates
+            ]
+            self.corpus = [
+                self.tokenize(candidate.raw_text)
+                for candidate in candidates
+            ]
+        else:
+            self.candidates = None
+            self.candidate_ids = candidate_ids or []
+            self.corpus = corpus or []
 
-        self.corpus = [
-            self.tokenize(
-                candidate.raw_text
-            )
-            for candidate in candidates
-        ]
+        self.bm25 = bm25 if bm25 is not None else BM25Okapi(self.corpus)
 
-        self.bm25 = BM25Okapi(
-            self.corpus
+    @classmethod
+    def from_bm25_index(
+            cls,
+            candidate_ids: list[str],
+            bm25_path: str
+    ):
+        with open(bm25_path, "rb") as f:
+            bm25 = pickle.load(f)
+
+        return cls(
+            candidate_ids=candidate_ids,
+            bm25=bm25
         )
 
     def tokenize(

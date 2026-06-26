@@ -3,6 +3,7 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
+from config import EMBEDDING_MODEL_DIR, EMBEDDING_MODEL_ID, resolve_model_path
 from src.dimensions.dimension_schema import Dimension
 from src.parser.schema import Candidate
 
@@ -14,13 +15,13 @@ class EmbeddingMatcher:
             use_precomputed: bool = True,
             embeddings_path: str = "artifacts/candidate_embeddings.npy",
             ids_path: str = "artifacts/candidate_ids.npy",
-            model_name: str = "BAAI/bge-small-en-v1.5"
+                model_name: str = EMBEDDING_MODEL_ID
     ):
 
         self.use_precomputed = use_precomputed
 
         self.model = SentenceTransformer(
-            model_name
+            resolve_model_path(EMBEDDING_MODEL_DIR, model_name, allow_remote=False)
         )
 
         self.dimension_embeddings = {}
@@ -98,35 +99,41 @@ class EmbeddingMatcher:
 
         }
 
+    def _candidate_id(self, candidate: Candidate | str) -> str:
+        return candidate if isinstance(candidate, str) else candidate.candidate_id
+
+    def _candidate_text(self, candidate: Candidate | str) -> str:
+        return candidate if isinstance(candidate, str) else candidate.raw_text
+
     def get_candidate_embedding(
             self,
-            candidate: Candidate
+            candidate: Candidate | str
     ) -> np.ndarray:
 
         if self.use_precomputed:
-            row = self.candidate_id_to_row[candidate.candidate_id]
+            row = self.candidate_id_to_row[self._candidate_id(candidate)]
             return self.candidate_embeddings[row]
 
         return self.model.encode(
-            candidate.raw_text,
+            self._candidate_text(candidate),
             normalize_embeddings=True,
             convert_to_numpy=True
         )
 
     def get_candidate_embeddings_matrix(
             self,
-            candidates: list[Candidate]
+            candidates: list[Candidate | str]
     ) -> np.ndarray:
 
         if self.use_precomputed:
             rows = [
-                self.candidate_id_to_row[candidate.candidate_id]
+                self.candidate_id_to_row[self._candidate_id(candidate)]
                 for candidate in candidates
             ]
             return self.candidate_embeddings[rows]
 
         return self.model.encode(
-            [candidate.raw_text for candidate in candidates],
+            [self._candidate_text(candidate) for candidate in candidates],
             normalize_embeddings=True,
             convert_to_numpy=True,
             show_progress_bar=False
@@ -134,9 +141,8 @@ class EmbeddingMatcher:
 
     def score_candidate(
             self,
-            candidate: Candidate
+            candidate: Candidate | str
     ) -> dict[str, float]:
-
         candidate_embedding = self.get_candidate_embedding(candidate)
         scores = {}
 
@@ -149,9 +155,8 @@ class EmbeddingMatcher:
     def score_candidates_bulk(
             self,
             dimensions: list[Dimension],
-            candidates: list[Candidate]
+            candidates: list[Candidate | str]
     ) -> list[dict[str, float]]:
-
         if not self.dimension_embeddings:
             self.build_dimension_embeddings(dimensions)
 
@@ -174,9 +179,8 @@ class EmbeddingMatcher:
     def score_all_dimensions(
             self,
             dimensions: list[Dimension],
-            candidate: Candidate
+            candidate: Candidate | str
     ) -> dict[str, float]:
-
         if not self.dimension_embeddings:
             self.build_dimension_embeddings(dimensions)
 
