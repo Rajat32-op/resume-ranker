@@ -1,0 +1,101 @@
+candidate_id,rank,score,reasoning
+CAND_0080766,1,0.644979,Staff Machine Learning Engineer with 8.8 years experience. Strong ranking/retrieval and product mindset. Recruiter response rate 0.66.
+CAND_0077337,2,0.608746,Staff Machine Learning Engineer with 7.0 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.95.
+CAND_0093547,3,0.602421,Senior Machine Learning Engineer with 2.9 years experience. Strong ranking/retrieval and production systems. Recruiter response rate 0.75.
+CAND_0018499,4,0.569234,Senior Machine Learning Engineer with 7.2 years experience. Strong production systems and product mindset. Open to work. Recruiter response rate 0.61.
+CAND_0017960,5,0.567202,Recommendation Systems Engineer with 7.7 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.72.
+CAND_0026532,6,0.562625,Recommendation Systems Engineer with 4.8 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.52.
+CAND_0055992,7,0.558173,AI Engineer with 16.9 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.72.
+CAND_0042506,8,0.555096,Search Engineer with 4.2 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.48.
+CAND_0041669,9,0.550354,Recommendation Systems Engineer with 8.0 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.77.
+CAND_0053695,10,0.548620,Recommendation Systems Engineer with 5.8 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.60.
+CAND_0086151,11,0.548161,Recommendation Systems Engineer with 7.7 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.52.
+CAND_0061265,12,0.539611,Recommendation Systems Engineer with 6.6 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.94.
+CAND_0006557,13,0.534390,NLP Engineer with 7.9 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.63.
+CAND_0008425,14,0.533373,Senior NLP Engineer with 7.8 years experience. Strong technical skills and product mindset. Open to work. Recruiter response rate 0.66.
+CAND_0039754,15,0.529811,Senior Applied Scientist with 16.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.81.
+CAND_0092278,16,0.527995,Senior NLP Engineer with 6.8 years experience. Strong product mindset and ranking/retrieval. Recruiter response rate 0.07.
+CAND_0077285,17,0.525633,Recommendation Systems Engineer with 5.5 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.56.
+CAND_0081846,18,0.523066,Lead AI Engineer with 6.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.73.
+CAND_0018549,19,0.520369,Recommendation Systems Engineer with 6.8 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.73.
+CAND_0088025,20,0.520254,Staff Machine Learning Engineer with 8.6 years experience. Strong production systems and product mindset. Open to work. Recruiter response rate 0.83.
+CAND_0018722,21,0.520033,Recommendation Systems Engineer with 6.6 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.79.
+CAND_0028793,22,0.516894,Search Engineer with 7.2 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.57.
+CAND_0014440,23,0.514474,Recommendation Systems Engineer with 6.4 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.64.
+CAND_0033861,24,0.511050,Senior NLP Engineer with 8.0 years experience. Strong production systems and product mindset. Recruiter response rate 0.16.
+CAND_0011162,25,0.509144,Recommendation Systems Engineer with 5.8 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.75.
+CAND_0041610,26,0.506469,Recommendation Systems Engineer with 6.7 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.52.
+CAND_0044883,27,0.504057,AI Engineer with 6.3 years experience. Strong ranking/retrieval and product mindset. Recruiter response rate 0.84.
+CAND_0005649,28,0.499978,Senior Data Scientist with 7.4 years experience. Strong ranking/retrieval and product mindset. Open to work. Recruiter response rate 0.57.
+CAND_0086022,29,0.491025,Senior Applied Scientist with 5.3 years experience. Strong production systems and product mindset. Open to work. Recruiter response rate 0.55.
+CAND_0083307,30,0.490353,Search Engineer with 7.8 years experience. Strong evaluation frameworks and product mindset. Open to work. Recruiter response rate 0.70.
+CAND_0081686,31,0.488459,Search Engineer with 6.0 years experience. Strong ranking/retrieval and product mindset. Recruiter response rate 0.91.
+CAND_0071974,32,0.484158,Senior AI Engineer with 7.8 years experience. Strong product mindset and technical skills. Open to work. Recruiter response rate 0.76.
+CAND_0024466,33,0.477351,Search Engineer with 5.2 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.47.
+CAND_0060054,34,0.476474,AI Engineer with 6.4 years experience. Strong ranking/retrieval and product mindset. Recruiter response rate 0.86.
+CAND_0065195,35,0.476232,Search Engineer with 5.1 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.80.
+CAND_0041611,36,0.469158,Staff Machine Learning Engineer with 6.4 years experience. Strong product mindset and production systems. Recruiter response rate 0.07.
+CAND_0046525,37,0.465151,Senior Machine Learning Engineer with 6.1 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.88.
+CAND_0040117,38,0.465086,Recommendation Systems Engineer with 6.5 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.66.
+CAND_0066376,39,0.464605,Applied ML Engineer with 5.7 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.51.
+CAND_0041568,40,0.461858,Search Engineer with 5.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.52.
+CAND_0070398,41,0.461403,Machine Learning Engineer with 7.2 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.60.
+CAND_0002025,42,0.460661,Senior AI Engineer with 5.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.80.
+CAND_0062247,43,0.456849,AI Engineer with 7.3 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.78.
+CAND_0044855,44,0.454334,Senior Data Scientist with 6.6 years experience. Strong product mindset and ranking/retrieval. Recruiter response rate 0.57.
+CAND_0007411,45,0.452660,Senior Machine Learning Engineer with 8.0 years experience. Strong technical skills and product mindset. Recruiter response rate 0.12.
+CAND_0055905,46,0.452027,Senior Machine Learning Engineer with 8.1 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.87.
+CAND_0031593,47,0.448364,Search Engineer with 7.8 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.58.
+CAND_0076251,48,0.448336,Search Engineer with 7.6 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.51.
+CAND_0030953,49,0.442843,Search Engineer with 7.8 years experience. Strong product mindset and leadership. Recruiter response rate 0.63.
+CAND_0064326,50,0.442422,Search Engineer with 7.6 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.94.
+CAND_0051630,51,0.433112,Machine Learning Engineer with 6.0 years experience. Strong product mindset and leadership. Recruiter response rate 0.51.
+CAND_0005260,52,0.431649,Senior NLP Engineer with 5.2 years experience. Strong product mindset and production systems. Recruiter response rate 0.86.
+CAND_0001610,53,0.427001,Machine Learning Engineer with 3.0 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.57.
+CAND_0076904,54,0.426655,Senior Data Scientist with 4.2 years experience. Strong product mindset and ranking/retrieval. Open to work. Recruiter response rate 0.54.
+CAND_0060072,55,0.422752,Staff Machine Learning Engineer with 5.7 years experience. Strong product mindset and leadership. Recruiter response rate 0.10.
+CAND_0046064,56,0.422322,Senior NLP Engineer with 8.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.78.
+CAND_0011687,57,0.418057,Senior NLP Engineer with 7.8 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.89.
+CAND_0094759,58,0.412234,Lead AI Engineer with 8.6 years experience. Strong product mindset and leadership. Recruiter response rate 0.11.
+CAND_0015528,59,0.409423,Applied ML Engineer with 7.4 years experience. Strong product mindset and leadership. Recruiter response rate 0.53.
+CAND_0069905,60,0.407746,Applied ML Engineer with 6.6 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.78.
+CAND_0010257,61,0.402947,Senior Data Scientist with 6.5 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.72.
+CAND_0042029,62,0.400142,Senior Data Scientist with 6.5 years experience. Strong product mindset and leadership. Recruiter response rate 0.67.
+CAND_0013613,63,0.396256,Machine Learning Engineer with 4.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.73.
+CAND_0095528,64,0.395902,Senior Data Scientist with 5.3 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.55.
+CAND_0089552,65,0.392240,Machine Learning Engineer with 6.0 years experience. Strong product mindset and leadership. Recruiter response rate 0.49.
+CAND_0096172,66,0.391765,NLP Engineer with 5.2 years experience. Strong product mindset and leadership. Recruiter response rate 0.47.
+CAND_0093912,67,0.387079,Senior Data Scientist with 5.3 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.66.
+CAND_0006418,68,0.384323,Machine Learning Engineer with 5.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.92.
+CAND_0009024,69,0.382663,Search Engineer with 5.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.46.
+CAND_0013536,70,0.381883,Applied ML Engineer with 14.1 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.87.
+CAND_0040887,71,0.380843,Machine Learning Engineer with 4.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.84.
+CAND_0019480,72,0.380421,NLP Engineer with 2.8 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.87.
+CAND_0079387,73,0.378140,AI Engineer with 6.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.81.
+CAND_0050454,74,0.377816,AI Engineer with 6.8 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.77.
+CAND_0091909,75,0.377311,Machine Learning Engineer with 6.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.65.
+CAND_0044222,76,0.377110,AI Engineer with 7.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.60.
+CAND_0045250,77,0.366158,Applied ML Engineer with 6.6 years experience. Strong product mindset and leadership. Recruiter response rate 0.74.
+CAND_0020877,78,0.365268,Applied ML Engineer with 5.1 years experience. Strong product mindset and leadership. Recruiter response rate 0.66.
+CAND_0057563,79,0.364937,NLP Engineer with 6.8 years experience. Strong product mindset and leadership. Recruiter response rate 0.83.
+CAND_0068811,80,0.364396,Applied ML Engineer with 8.0 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.42.
+CAND_0096142,81,0.364331,Applied ML Engineer with 5.0 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.84.
+CAND_0047721,82,0.362671,Senior Data Scientist with 7.0 years experience. Strong product mindset and leadership. Recruiter response rate 0.49.
+CAND_0075574,83,0.361805,Machine Learning Engineer with 5.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.58.
+CAND_0037566,84,0.359988,Machine Learning Engineer with 6.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.50.
+CAND_0051292,85,0.358309,Applied ML Engineer with 5.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.52.
+CAND_0091534,86,0.355094,AI Engineer with 16.6 years experience. Strong product mindset and leadership. Recruiter response rate 0.84.
+CAND_0075249,87,0.353609,Applied ML Engineer with 6.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.82.
+CAND_0079064,88,0.350660,Senior Data Scientist with 5.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.91.
+CAND_0027691,89,0.348220,NLP Engineer with 6.5 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.68.
+CAND_0011432,90,0.347659,Senior Data Scientist with 7.6 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.67.
+CAND_0037944,91,0.346208,Senior Data Scientist with 4.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.42.
+CAND_0094056,92,0.343131,NLP Engineer with 5.9 years experience. Strong product mindset and leadership. Recruiter response rate 0.82.
+CAND_0007009,93,0.340750,Recommendation Systems Engineer with 7.9 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.62.
+CAND_0053591,94,0.340731,AI Engineer with 5.3 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.81.
+CAND_0064270,95,0.337155,Applied ML Engineer with 4.2 years experience. Strong product mindset and leadership. Recruiter response rate 0.82.
+CAND_0029367,96,0.333160,Senior Data Scientist with 5.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.77.
+CAND_0027801,97,0.330483,NLP Engineer with 7.4 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.65.
+CAND_0093331,98,0.328888,NLP Engineer with 16.1 years experience. Strong product mindset and leadership. Recruiter response rate 0.41.
+CAND_0016163,99,0.321475,Applied ML Engineer with 6.7 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.72.
+CAND_0009691,100,0.316454,Applied ML Engineer with 6.2 years experience. Strong product mindset and leadership. Open to work. Recruiter response rate 0.64.

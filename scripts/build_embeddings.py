@@ -15,7 +15,7 @@ from src.parser.candidate_parser import load_candidates
 
 
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
-BATCH_SIZE = 128
+BATCH_SIZE = 256
 
 
 def parse_args():
