@@ -66,7 +66,7 @@ st.markdown(
             gap: 0.5rem;
         }
         .stRadio label {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.9);
             border: 1px solid rgba(15, 23, 42, 0.1);
             border-radius: 999px;
             padding: 0.35rem 0.75rem;
@@ -92,8 +92,7 @@ st.markdown(
     <div class="hero">
         <h1>Resume Filter</h1>
         <p>
-            Upload a JD and candidate set, then run either the live embedding path for a small sample
-            or the precomputed embedding path for the full pool.
+            Upload a JD and a small candidate set, then run the live ranking for the top 100 candidates.
         </p>
     </div>
     """,
@@ -106,33 +105,20 @@ with left_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Inputs")
 
-    candidate_mode = st.radio(
-        "Candidate mode",
-        options=["sample", "pool"],
-        format_func=lambda value: "Sample upload (live embeddings)" if value == "sample" else "100k pool (precomputed embeddings)",
-        horizontal=True,
-    )
-
     jd_file = st.file_uploader(
         "Job description (.docx)",
         type=["docx"],
         accept_multiple_files=False,
     )
 
-    if candidate_mode == "sample":
-        candidate_file = st.file_uploader(
-            "Candidates JSON (.json)",
-            type=["json"],
-            accept_multiple_files=False,
-            help="Upload a JSON array of up to 100 candidates."
-        )
-    else:
-        candidate_file = st.file_uploader(
-            "Candidates JSONL (.jsonl)",
-            type=["jsonl"],
-            accept_multiple_files=False,
-            help="Upload the large candidate pool file. Candidate ids must match the precomputed embeddings."
-        )
+    
+    candidate_file = st.file_uploader(
+        "Candidates JSON (.json)",
+        type=["json"],
+        accept_multiple_files=False,
+        help="Upload a JSON array of up to 100 candidates."
+    )
+    
 
     st.caption("The ranking depth is fixed in code. The app always returns the top 100 results.")
 
@@ -148,20 +134,11 @@ with right_col:
             st.error("Upload both the JD and the candidate file before running the pipeline.")
         else:
             candidate_bytes = candidate_file.getvalue()
-            if candidate_mode == "sample":
-                candidate_records = json.loads(candidate_bytes.decode("utf-8"))
-                if isinstance(candidate_records, dict):
-                    candidate_records = [candidate_records]
-                candidate_records = candidate_records[:100]
-                candidate_objects = load_candidates_from_records(candidate_records)
-            else:
-                candidate_text = candidate_bytes.decode("utf-8")
-                candidate_records = [
-                    json.loads(line)
-                    for line in candidate_text.splitlines()
-                    if line.strip()
-                ]
-                candidate_objects = load_candidates_from_records(candidate_records)
+            candidate_records = json.loads(candidate_bytes.decode("utf-8"))
+            if isinstance(candidate_records, dict):
+                candidate_records = [candidate_records]
+            candidate_records = candidate_records[:100]
+            candidate_objects = load_candidates_from_records(candidate_records)
 
             with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as jd_temp:
                 jd_temp.write(jd_file.getvalue())
@@ -171,26 +148,29 @@ with right_col:
                 ranker = Ranker(
                     jd_path=jd_path,
                     candidates=candidate_objects,
-                    use_precomputed_embeddings=candidate_mode == "pool",
+                    use_precomputed_embeddings=False,
                     embeddings_path=DEFAULT_EMBEDDINGS_PATH,
                     ids_path=DEFAULT_IDS_PATH,
                 )
                 results = ranker.rank_candidates()
 
             rows = []
+            cnt=1
             for result in results[: FINAL_OUTPUT_TOP_N]:
                 rows.append(
                     {
                         "candidate_id": result.candidate_id,
+                        "rank":cnt,
                         "final_score": result.final_score,
                     }
                 )
+                cnt+=1
 
             if rows:
                 frame = pd.DataFrame(rows)
                 output_dir = Path(DEFAULT_OUTPUT_DIR)
                 output_dir.mkdir(parents=True, exist_ok=True)
-                csv_path = output_dir / f"ranking_results_{candidate_mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                csv_path = output_dir / f"ranking_results_sample_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
                 frame.to_csv(csv_path, index=False)
 
                 st.success(f"Saved top {FINAL_OUTPUT_TOP_N} results to `{csv_path}`")
