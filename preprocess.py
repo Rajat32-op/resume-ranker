@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 
 from huggingface_hub import hf_hub_download
 from huggingface_hub import snapshot_download
@@ -18,6 +19,17 @@ EMBEDDINGS_PATH = "artifacts/candidate_embeddings.npy"
 IDS_PATH = "artifacts/candidate_ids.npy"
 POOL_CACHE_PATH = "artifacts/pool_candidate_cache.npz"
 
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--download-models",
+        action="store_true",
+        help="Download only the embedding and reranker models."
+    )
+
+    return parser.parse_args()
 
 def download_model_snapshot(repo_id: str, local_dir: Path):
     local_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -65,15 +77,32 @@ def download_model_artifacts():
 
 
 def main():
+
+    args = parse_args()
+
+    print("Downloading model artifacts...")
     download_model_artifacts()
+
+    if args.download_models:
+        print("Model download completed.")
+        return
+
+    print("Downloading pool artifacts...")
     download_pool_artifacts()
 
     print("Loading candidates...")
-    candidates = load_candidates(INPUT_PATH, file_format="jsonl")
+    candidates = load_candidates(
+        INPUT_PATH,
+        file_format="jsonl"
+    )
+
     print(f"Loaded {len(candidates)} candidates")
 
     print("Building pool cache...")
-    build_pool_candidate_cache_from_candidates(candidates, POOL_CACHE_PATH)
+    build_pool_candidate_cache_from_candidates(
+        candidates,
+        POOL_CACHE_PATH
+    )
 
     print(f"Saved embeddings: {EMBEDDINGS_PATH}")
     print(f"Saved ids: {IDS_PATH}")
