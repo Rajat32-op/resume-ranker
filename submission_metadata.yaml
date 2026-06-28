@@ -30,7 +30,7 @@ github_repo: "https://github.com/Rajat32-op/resume-ranker"
 # Required. Must be reachable. Private repos OK if you can grant organizer
 # access at Stage 3 (the email to add will be communicated then).
 
-sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"
+sandbox_link: "https://huggingface.co/spaces/Rajat3206/resume_analysis"
 # Required. A working hosted environment where the ranker can be run on a small
 # candidate sample. See Section 10.5 of submission_spec.md for acceptable
 # platforms (HuggingFace Spaces, Streamlit Cloud, Replit, Colab, Docker, Binder).
@@ -43,7 +43,7 @@ reproduce_command: "python rank.py --candidates-mode=pool"
 # Compute environment
 # ============================================================================
 compute:
-  platform: "MacBook Pro M2"                    # Or: "AWS EC2 c5.4xlarge", "Local Linux box", etc.
+  platform: "Lenovo ideapad (linux OS)"                    # Or: "AWS EC2 c5.4xlarge", "Local Linux box", etc.
   cpu_cores: 8                                  # Number of CPU cores used
   ram_gb: 16                                    # Available RAM in GB
   python_version: "3.11.4"                      # python --version
@@ -65,25 +65,26 @@ ai_tools_used:
   # Other options: "ChatGPT", "Cursor", "Gemini", "Codeium", "Other", "None"
 
 ai_usage_summary: |
-  Briefly describe how AI tools were used. Examples:
-  - "Used Claude for code review and architectural discussion. Used Copilot for autocomplete.
-     No candidate data was fed to any LLM."
-  - "Used ChatGPT to debug Python issues and Cursor for refactoring."
-  - "No AI tools used."
+  - Used ChatGPT for architectural discussions, debugging, code reviews, and implementation guidance throughout development. 
+  - Used GitHub Copilot for code autocompletion and minor refactoring. 
+    No candidate data was sent to any external LLM APIs beyond local development workflows.
 
 # ============================================================================
 # Approach summary (optional but recommended)
 # ============================================================================
 methodology_summary: |
-  ≤200 word summary of your approach. Strongly recommended.
-
-  Example:
-  "Rule-based ranker with explicit reasoning capture. Five scoring components
-  (skills, title+career, experience years, location, education) combined with
-  a multiplicative behavioral-signal modifier. The title component is the
-  decisive signal against keyword-stuffer traps; an endorsement-and-duration
-  trust multiplier on skills catches lazy keyword stuffing. Runtime is ~10
-  seconds for 50K candidates on CPU."
+  Built a two-stage hybrid candidate ranking pipeline that combines semantic retrieval, 
+  lexical matching, structured reasoning, and neural reranking. The Job Description is 
+  decomposed into weighted hiring dimensions (e.g., Technical Skills, Ranking & Retrieval, 
+  Production Experience), each evaluated independently. Stage 1 combines BGE semantic 
+  embeddings, BM25 lexical retrieval, and structured rule-based scoring using 
+  dimension-specific fusion weights to efficiently rank the entire candidate pool. 
+  The top candidates are then reranked using the BGE Cross Encoder for deeper semantic 
+  understanding. Candidate embeddings are precomputed offline and BM25 indexes are cached, 
+  allowing the online ranking step to remain within the challenge runtime constraints. 
+  The system produces explainable rankings by generating concise reasons directly from 
+  the highest-scoring dimensions and validated profile signals, avoiding unsupported or 
+  hallucinated justifications.
 
 # ============================================================================
 # Declarations

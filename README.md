@@ -45,4 +45,4 @@ The generated ranking file will be saved in the **`outputs/`** directory.
 
 To check a sample (<100):
 
-**Hugging Face Space:**
+[**Hugging Face Space:**](https://huggingface.co/spaces/Rajat3206/resume_analysis)
