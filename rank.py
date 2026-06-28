@@ -106,7 +106,7 @@ def main():
     output_dir = Path(DEFAULT_OUTPUT_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    csv_path = output_dir / f"ranking_results_{args.candidate_mode}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    csv_path = output_dir / f"team_intellecta.csv"
     with open(csv_path, "w", encoding="utf-8") as f:
         f.write("candidate_id,rank,score,reasoning\n")
         cnt=1
