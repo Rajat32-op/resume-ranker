@@ -33,22 +33,21 @@ def download_pool_artifacts():
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Downloading pool embeddings from Hugging Face...")
-    hf_hub_download(
-        repo_id=HF_REPO_ID,
-        repo_type="dataset",
-        filename="candidate_embeddings.npy",
-        local_dir="artifacts",
-    )
+    files = [
+        "candidates.jsonl",
+        "candidate_embeddings.npy",
+        "candidate_ids.npy",
+    ]
 
-    print("Downloading pool candidate ids from Hugging Face...")
-    hf_hub_download(
-        repo_id=HF_REPO_ID,
-        repo_type="dataset",
-        filename="candidate_ids.npy",
-        local_dir="artifacts",
-    )
+    for filename in files:
+        print(f"Downloading {filename} from Hugging Face...")
 
+        hf_hub_download(
+            repo_id=HF_REPO_ID,
+            repo_type="dataset",
+            filename=filename,
+            local_dir="artifacts",
+        )
 
 def download_model_artifacts():
     print("Downloading embedding model snapshot...")
