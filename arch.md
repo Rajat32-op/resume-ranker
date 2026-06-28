@@ -2,405 +2,213 @@
 
 ## Overview
 
-This repository implements a two-stage resume ranking pipeline around a single job description (JD) and a set of candidate profiles.
+The proposed solution is a hybrid, two-stage candidate ranking system designed to understand the intent behind a Job Description (JD) rather than relying on simple keyword matching. Instead of producing a single similarity score, the system evaluates every candidate across multiple hiring dimensions, combines evidence from different retrieval methods, and finally performs neural reranking on the strongest candidates.
 
-The system has two execution modes:
+The overall pipeline consists of:
 
-1. Sample mode
-  - The user uploads a small JSON file with candidates.
-  - The app and CLI cap the sample to 100 candidates internally.
-  - Candidate embeddings are generated live from raw text.
-  - The full ranking pipeline is then executed.
+1. JD Understanding
+2. Candidate Processing
+3. Hybrid Retrieval & Scoring
+4. Cross Encoder Reranking
+5. Final Ranking & Explainability
 
-2. Pool mode
-   - The user uploads the large candidate pool JSONL file.
-   - Candidate embeddings are loaded from precomputed artifacts in `artifacts/`.
-   - The ranking pipeline runs over the full pool without recomputing candidate embeddings.
+---
 
-The pipeline is split into these phases:
+# JD Understanding
 
-- JD parsing and dimension construction
-- Candidate parsing and text normalization
-- Stage 1 retrieval scoring
-- Cross-encoder reranking on the Stage 1 shortlist
-- Final score aggregation and output formatting
+Rather than comparing the entire JD against the entire resume, the JD is first decomposed into several hiring dimensions. Each dimension represents an important hiring criterion.
 
-## Runtime Entry Points
+Examples include:
 
-### CLI
+* Technical Skills
+* Ranking & Retrieval
+* Production Experience
+* Evaluation Frameworks
+* Product Mindset
+* Leadership
+* Domain Experience
+* Behavioral Signals
+* Location
 
-File: `rank.py`
+Each dimension contains a set of **semantic anchors**.
 
-Main responsibilities:
+Anchors are representative concepts that define what the recruiter actually expects instead of merely matching exact keywords.
 
-- Parse CLI arguments.
-- Choose sample mode or pool mode.
-- Instantiate `src.ranker.Ranker`.
-- Execute ranking.
-- Print the top 100 results.
+For example, the **Ranking & Retrieval** dimension contains anchors such as:
 
-Key functions:
+* embeddings
+* retrieval
+* recommendation systems
+* vector databases
+* FAISS
+* Pinecone
+* Qdrant
+* Milvus
 
-- `parse_args()`
-  - Defines the CLI interface.
-  - The only user-visible mode switch is `--candidate-mode`.
-- `resolve_defaults(args)`
-  - Fills in default candidate file paths.
-  - Keeps the reranking depth and output count fixed inside the program.
-- `serialize_results(results)`
-  - Converts ranking output to JSON.
-- `main()`
-  - Wires the CLI to the ranking engine.
+These anchors allow the system to understand semantic similarity even when the candidate uses different wording.
 
-Important constants:
+After mapping the JD to these dimensions, dynamic weights are generated automatically based on how strongly the JD emphasizes each requirement.
 
-- `STAGE1_TOP_K = 1000`
-- `FINAL_OUTPUT_TOP_N = 100`
+---
 
-These are intentionally internal so the user does not control ranking depth from the CLI.
+# Candidate Processing
 
-### Streamlit UI
+Every candidate profile is parsed into a structured representation.
 
-File: `app.py`
+The parser extracts:
 
-Main responsibilities:
+* Profile information
+* Career history
+* Education
+* Skills
+* Certifications
+* Platform behavioral signals
 
-- Provide a simple upload interface for Hugging Face Spaces.
-- Let the user choose sample mode or pool mode.
-- Accept the JD upload and the candidate file upload.
-- Run the same ranking pipeline used by the CLI.
-- Display and download the top 100 results.
+A normalized textual representation (`raw_text`) is also created by combining all relevant information from the profile. This unified text is used by the semantic retrieval models.
 
-Key runtime flow:
+---
 
-- `st.file_uploader()` is used for the JD.
-- `st.file_uploader()` is used for the candidate file.
-- `load_candidates_from_records()` converts uploaded JSON or JSONL records into candidate objects.
-- `Ranker(...)` executes the pipeline.
-- A Pandas DataFrame shows the final ranking table.
-- The UI does not expose tuning knobs for Stage 1 depth or final output count.
+# Stage 1: Hybrid Retrieval
 
-## Core Pipeline
+Candidate evaluation is performed using three complementary retrieval methods.
 
-### 1. JD parsing
+## Semantic Embedding Matching
 
-File: `src/parser/jd_parser.py`
+Semantic embeddings capture contextual similarity between a candidate profile and each JD dimension.
 
-Function:
+The system uses **BAAI/bge-small-en-v1.5** to encode both the JD dimensions and candidate profiles into dense vectors.
 
-- `parse_jd(docx_path)`
+Similarity is computed using cosine similarity.
 
-What it does:
+Unlike keyword search, semantic embeddings recognize conceptually similar experience even when different terminology is used.
 
-- Reads the JD `.docx` file.
-- Extracts raw paragraphs.
-- Parses structured fields such as title, company, location, employment type, and experience range.
-- Produces a `JD` object with `raw_text` plus parsed metadata.
+Example:
 
-Output:
+A candidate describing
 
-- `src/parser/jd_schema.JD`
+> "Built recommendation engines"
 
-### 2. Dimension construction and weighting
+will still match a JD mentioning
 
-Files:
+> "Ranking and Retrieval"
 
-- `src/dimensions/anchor_builder.py`
-- `src/dimensions/dimension_mapper.py`
-- `src/dimensions/weight_generator.py`
+even without sharing identical keywords.
 
-This phase builds the scoring dimensions that the whole ranking system uses.
+---
 
-Functions:
+## BM25 Matching
 
-- `build_dimension_templates()`
-  - Creates the base dimension list and their anchor text.
-- `map_jd_to_dimensions(jd, dimensions)`
-  - Maps JD content into the dimension templates.
-- `generate_weights(dimensions)`
-  - Assigns final weights for each dimension.
+BM25 provides lexical matching based on exact words appearing in candidate profiles.
 
-These functions are called from `Ranker.__init__()`.
+Instead of comparing against the entire JD, BM25 operates independently for each hiring dimension.
 
-### 3. Candidate parsing
+Each dimension is converted into a query consisting of:
 
-File: `src/parser/candidate_parser.py`
+* important anchors
+* important JD phrases
 
-Functions:
+A BM25 index is built over the candidate corpus once, allowing efficient retrieval of candidates containing highly relevant technical terms.
 
-- `parse_candidate(candidate_json)`
-  - Parses one candidate dictionary into a `Candidate` object.
-- `load_candidates_from_records(candidate_records)`
-  - Converts a list of dictionaries into parsed candidates.
-- `load_candidates(path, file_format=None, limit=None)`
-  - Loads candidates from JSON or JSONL.
-  - Supports optional limiting for sample mode.
+This complements semantic retrieval by rewarding precise matches for technologies such as:
 
-Output:
+* FAISS
+* Milvus
+* Pinecone
+* LoRA
+* NDCG
+* BM25
 
-- `src/parser/schema.Candidate`
+---
 
-Important behavior:
+## Structured Matching
 
-- The parser also constructs `candidate.raw_text`.
-- That raw text is used by embedding, BM25, structured, and cross-encoder retrieval.
+Some hiring requirements cannot be measured reliably using text similarity alone.
 
-### 4. Stage 1 retrieval scoring
+The Structured Matcher evaluates explicit profile evidence using deterministic rules.
 
-File: `src/ranker.py`
+Examples include:
 
-Main function:
+* Years of experience
+* Production deployment experience
+* Product vs service company background
+* Evaluation framework experience
+* Ranking and retrieval technologies
 
-- `Ranker.score_candidate_stage1(candidate, bm25_scores)`
+Each rule contributes evidence to one or more hiring dimensions.
 
-This stage combines three source signals:
+Because structured matching relies on verified profile information rather than free text alone, it improves robustness against keyword stuffing and incomplete profiles.
 
-- Embedding similarity
-- BM25 lexical similarity
-- Structured heuristic matching
+---
 
-The stage uses these components:
+# Score Fusion
 
-#### 4.1 Embedding similarity
+Each hiring dimension receives three independent scores:
 
-File: `src/retrieval/embedding_matcher.py`
+* Embedding Score
+* BM25 Score
+* Structured Score
 
-Class: `EmbeddingMatcher`
+These scores are combined using dimension-specific fusion weights.
 
-Key functions:
+Different dimensions rely on different retrieval methods.
 
-- `__init__(use_precomputed=True, embeddings_path=..., ids_path=..., model_name=...)`
-- `build_dimension_text(dimension)`
-- `build_dimension_embeddings(dimensions)`
-- `get_candidate_embedding(candidate)`
-- `score_candidate(candidate)`
-- `score_all_dimensions(dimensions, candidate)`
+For example:
 
-Behavior:
+* Technical Skills rely heavily on semantic embeddings.
+* Production Experience relies more on structured evidence.
+* Ranking & Retrieval benefits from both embeddings and BM25.
 
-- In sample mode, candidate embeddings are generated live from `candidate.raw_text`.
-- In pool mode, candidate embeddings are loaded once from `artifacts/candidate_embeddings.npy` and looked up by candidate id.
-- Dimension embeddings are always generated from the JD dimensions.
+This produces a single Stage 1 score for every hiring dimension.
 
-This is the component that handles the precomputed embedding flag.
+---
 
-#### 4.2 BM25 retrieval
+# Stage 2: Cross Encoder Reranking
 
-File: `src/retrieval/bm25_matcher.py`
+Running a Cross Encoder over the complete candidate pool would be computationally expensive.
 
-Class: `BM25Matcher`
+Instead, only the top candidates from Stage 1 are passed to the reranker.
 
-Key functions:
+The system uses **BAAI/bge-reranker-base** to jointly process the JD dimension and candidate profile, producing a deeper semantic relevance score.
 
-- `tokenize(text)`
-- `build_dimension_query(dimension)`
-- `score_dimension(dimension)`
-- `score_all_dimensions(dimensions)`
+Unlike embedding similarity, the Cross Encoder directly models interactions between the query and candidate, leading to significantly better ranking precision.
 
-Behavior:
+Its output is combined with the Stage 1 score using dimension-specific weights.
 
-- Builds a BM25 index over all candidates once.
-- Scores each JD dimension query against the candidate corpus.
-- Returns normalized lexical scores per candidate and per dimension.
+---
 
-Performance note:
+# Final Ranking
 
-- BM25 is computed once per ranking run, not once per candidate.
-- This avoids the expensive repeated full-corpus BM25 pass.
+The final candidate score is computed as a weighted aggregation of all hiring dimensions.
 
-#### 4.3 Structured heuristics
+Dimension weights are derived automatically from the Job Description, allowing the ranking system to adapt to different hiring priorities without changing the retrieval pipeline.
 
-File: `src/retrieval/structured_matcher.py`
+The candidates are then sorted by this final score to produce the ranked output.
 
-Class: `StructuredMatcher`
+---
 
-Key functions:
+# Explainability
 
-- `score_ranking_retrieval(candidate)`
-- `score_production_experience(candidate)`
-- `score_evaluation_frameworks(candidate)`
-- `score_product_mindset(candidate)`
-- `score_all_dimensions(candidate)`
+Every recommendation includes a concise explanation generated directly from the computed scores.
 
-Behavior:
+The explanation highlights the candidate's strongest hiring dimensions along with important profile signals such as experience or recruiter responsiveness.
 
-- Uses simple keyword and rule-based checks on `candidate.raw_text` and profile metadata.
-- Produces a `MatchResult` for each structured dimension.
+Since explanations are generated from computed evidence rather than a language model, every statement is traceable to the candidate profile, eliminating unsupported or hallucinated justifications.
 
-#### 4.4 Source score aggregation
+---
 
-File: `src/scoring/source_score.py`
+# Scalability
 
-Class: `SourceScorer`
+The architecture is designed for efficient large-scale ranking.
 
-Key functions:
+For large candidate pools:
 
-- `score_dimension(dimension_name, embedding_score, bm25_score, structured_score)`
-- `score_all_dimensions(embedding_scores, bm25_scores, structured_scores)`
+* Candidate embeddings are precomputed once.
+* BM25 indexes are built once per corpus.
+* Cross Encoder inference is limited to the top-ranked candidates.
 
-Behavior:
+For small uploaded candidate sets:
 
-- Combines the three retrieval sources into a single `SourceScore`.
-- Each dimension has source-specific weights.
-- The result includes the individual source values plus an aggregate `value`.
+* Embeddings are generated on demand.
+* The same ranking pipeline is reused without requiring precomputed artifacts.
 
-### 5. Stage 1 shortlist selection
-
-File: `src/ranker.py`
-
-Function:
-
-- `Ranker.rank_candidates(top_k=1000)`
-
-Behavior:
-
-- Runs Stage 1 for all candidates.
-- Sorts by `stage1_final_score`.
-- Keeps only the top `top_k` candidates for Stage 2.
-
-Current behavior:
-
-- `top_k` is fixed inside the program.
-- It is not user-controlled.
-- Final output count is fixed at 100.
-
-### 6. Cross-encoder reranking
-
-File: `src/retrieval/cross_encoder_matcher.py`
-
-Class: `CrossEncoderMatcher`
-
-Key functions:
-
-- `score_all_dimensions(dimensions, candidate)`
-
-Behavior:
-
-- Builds query-candidate pairs for the cross-encoder.
-- Scores only the shortlisted candidates from Stage 1.
-- Does not run over the full 100k pool.
-
-Important detail:
-
-- Cross-encoder scoring is bounded by the Stage 1 shortlist.
-- This is the main reason the pipeline remains tractable.
-
-### 7. Confidence scoring
-
-File: `src/scoring/confidence.py`
-
-Class: `ConfidenceScorer`
-
-Key functions:
-
-- `score_dimension(source_score)`
-- `score_all_dimensions(source_scores)`
-
-Behavior:
-
-- Measures how consistent the three source signals are.
-- Higher agreement between embedding, BM25, and structured scores increases confidence.
-- Confidence is later used in final dimension scoring.
-
-### 8. Final dimension scoring
-
-File: `src/scoring/dimension_score.py`
-
-Class: `DimensionScorer`
-
-Key functions:
-
-- `score_dimension(dimension_name, source_score, confidence_score, cross_encoder_score=0.0)`
-- `score_all_dimensions(source_scores, confidence_scores, cross_encoder_scores)`
-
-Behavior:
-
-- Combines source score, confidence, and cross-encoder score.
-- Applies dimension-specific cross-encoder weights.
-- Returns final per-dimension scores.
-
-### 9. Final candidate score
-
-File: `src/scoring/candidate_score.py`
-
-Dataclass:
-
-- `CandidateScore`
-
-Fields:
-
-- `candidate_id`
-- `dimension_scores`
-- `final_score`
-
-Behavior:
-
-- Stores the final reranked score for each candidate.
-- This is the object returned by the pipeline.
-
-## End-to-End Execution Path
-
-### CLI path
-
-1. `rank.py:main()` parses arguments.
-2. `rank.py:resolve_defaults()` chooses the candidate file path.
-3. `Ranker.__init__()` loads the JD and candidates.
-4. `Ranker.rank_candidates()` runs Stage 1 on the full candidate set.
-5. Stage 1 uses:
-   - `EmbeddingMatcher`
-   - `BM25Matcher`
-   - `StructuredMatcher`
-   - `SourceScorer`
-6. The shortlist is reranked with:
-   - `CrossEncoderMatcher`
-   - `ConfidenceScorer`
-   - `DimensionScorer`
-7. The top 100 results are printed and optionally written to JSON.
-
-### Streamlit path
-
-1. The user uploads a JD and a candidate file.
-2. `app.py` parses the uploaded records.
-3. `Ranker` is constructed with the uploaded data.
-4. `Ranker.rank_candidates()` runs the same backend pipeline.
-5. The app displays the final top 100 and offers a CSV download.
-
-## Performance Characteristics
-
-### Pool mode
-
-- Candidate embeddings are precomputed in `artifacts/`.
-- Candidate embedding lookup is O(1) per candidate.
-- BM25 is computed once for the ranking run.
-- Cross-encoder only runs on the shortlist.
-
-### Sample mode
-
-- Candidate embeddings are generated live from the uploaded sample.
-- The sample size is capped at 100 internally.
-- This mode is intended for quick ad hoc runs, not the 100k pool.
-
-## Where Each Responsibility Lives
-
-- JD parsing: `src/parser/jd_parser.py` -> `parse_jd()`
-- Candidate parsing: `src/parser/candidate_parser.py` -> `parse_candidate()`, `load_candidates()`
-- Dimension building: `src/dimensions/*.py`
-- Stage 1 ranking: `src/ranker.py` -> `score_candidate_stage1()`
-- Full ranking orchestration: `src/ranker.py` -> `rank_candidates()`
-- Embedding retrieval: `src/retrieval/embedding_matcher.py`
-- BM25 retrieval: `src/retrieval/bm25_matcher.py`
-- Structured heuristics: `src/retrieval/structured_matcher.py`
-- Cross-encoder reranking: `src/retrieval/cross_encoder_matcher.py`
-- Source aggregation: `src/scoring/source_score.py`
-- Confidence scoring: `src/scoring/confidence.py`
-- Dimension-level reranking: `src/scoring/dimension_score.py`
-- Final result object: `src/scoring/candidate_score.py`
-- CLI entrypoint: `rank.py`
-- Streamlit UI: `app.py`
-- Precompute embeddings: `scripts/build_embeddings.py`
-
-## Notes
-
-- The ranking depth is fixed by program constants, not by user input.
-- The user-facing choice is only the candidate source mode: sample upload or pool upload.
-- The pool flow assumes the precomputed embedding artifacts are already available in `artifacts/`.
+This design enables both large-scale offline ranking and lightweight interactive deployment while remaining within the challenge's runtime constraints.

@@ -1,23 +1,48 @@
-Resume Filter
+# Resume Filter - Intelligent Candidate Ranking System
 
-CLI modes
+## Installation
 
-- Sample mode: rank up to 100 uploaded candidates with live embeddings.
-	- `python rank.py --candidate-mode sample --candidates-path data/sample_candidates.json --candidate-limit 100`
-- Pool mode: rank the 100k candidate pool using precomputed embeddings.
-	- `python rank.py --candidate-mode pool --candidates-path data/candidates.jsonl --embeddings-path artifacts/candidate_embeddings.npy --ids-path artifacts/candidate_ids.npy`
+Clone the repository and install the required dependencies.
 
-Embedding build
+```bash
+pip install -r requirements.txt
+```
 
-- `python3 preprocess.py`
+---
 
-Offline preprocessing
+## Preprocessing (Required for Pool Mode)
 
-- `python3 preprocess.py` downloads the embedding and reranker model snapshots plus the pool embeddings and candidate ids, then builds `artifacts/pool_candidate_cache.npz`.
-- `python3 preprocess.py` also builds `artifacts/pool_bm25.pkl`, which lets pool mode skip rebuilding the BM25 index at runtime.
-- The ranking pipeline uses the local artifacts after preprocessing.
+Before ranking the full **100K candidate pool**, run the preprocessing script **once**.
 
-Hugging Face / Streamlit app
+This step downloads the required models and precomputed artifacts, and builds the BM25 index required for fast inference.
 
-- Run locally with `streamlit run app.py`
-- The app accepts JD uploads and either a sample JSON candidate file or a pool JSONL candidate file.
+```bash
+python preprocess.py
+```
+
+> **Note:** Preprocessing is a one-time setup step and may take several minutes. The actual ranking step is optimized to complete within the challenge runtime limit.
+
+---
+
+## Running the Ranker
+
+
+---
+
+### Pool Mode (100K Candidates)
+
+Use this mode to rank the complete candidate pool.
+
+```bash
+python rank.py --candidate-mode=pool
+```
+
+The generated ranking file will be saved in the **`outputs/`** directory.
+
+---
+
+## Hosted Demo
+
+To check a sample (<100):
+
+**Hugging Face Space:**
