@@ -56,7 +56,7 @@ st.markdown(
             line-height: 1.6;
         }
         .card {
-            background: rgba(255, 255, 255, 0.88);
+            background: rgba(0, 0, 0, 0.88);
             border: 1px solid rgba(15, 23, 42, 0.08);
             border-radius: 20px;
             padding: 1.1rem 1.2rem;
@@ -90,7 +90,7 @@ st.markdown(
 st.markdown(
     """
     <div class="hero">
-        <h1>Resume Filter</h1>
+        <h1>Resume Analysis</h1>
         <p>
             Upload a JD and a small candidate set, then run the live ranking for the top 100 candidates.
         </p>
@@ -99,10 +99,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-left_col, right_col = st.columns([1.15, 0.85], gap="large")
+left_col, right_col = st.columns([0.85, 1.15], gap="large")
 
 with left_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Inputs")
 
     jd_file = st.file_uploader(
@@ -120,13 +119,11 @@ with left_col:
     )
     
 
-    st.caption("The ranking depth is fixed in code. The app always returns the top 100 results.")
 
     run_button = st.button("Run ranking", type="primary", use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Output")
 
     if run_button:
