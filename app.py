@@ -104,15 +104,37 @@ left_col, right_col = st.columns([0.85, 1.15], gap="large")
 with left_col:
     st.subheader("Inputs")
 
+    st.markdown("""
+    <style>
+    /* Reduce space below custom label */
+    .custom-label {
+        color: #000000;
+        margin-bottom: -20px;
+    }
+
+    /* Remove top margin from file uploader */
+    [data-testid="stFileUploader"] {
+        margin-top: -35px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown(
+    "<h6 style='color:#000000;'>Job description (.docx)</h6>",
+    unsafe_allow_html=True
+    )
     jd_file = st.file_uploader(
-        "Job description (.docx)",
+        "",
         type=["docx"],
         accept_multiple_files=False,
     )
 
-    
+    st.markdown(
+    "<h6 style='color:#000000;'>Candidates JSON (.json)</h6>",
+    unsafe_allow_html=True
+    )
     candidate_file = st.file_uploader(
-        "Candidates JSON (.json)",
+        "",
         type=["json"],
         accept_multiple_files=False,
         help="Upload a JSON array of up to 100 candidates."
