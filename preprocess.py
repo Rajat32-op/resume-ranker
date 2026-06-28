@@ -33,8 +33,15 @@ def download_pool_artifacts():
     artifacts_dir = Path("artifacts")
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"Downloading candidates.jsonl from Hugging Face...")
+
+    hf_hub_download(
+        repo_id=HF_REPO_ID,
+        repo_type="dataset",
+        filename="candidates.jsonl",
+        local_dir="data",
+    )
     files = [
-        "candidates.jsonl",
         "candidate_embeddings.npy",
         "candidate_ids.npy",
     ]
